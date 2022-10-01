@@ -1,12 +1,10 @@
 package com.vangelnum.retrofitstart
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,56 +24,63 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.vangelnum.retrofitstart.filmsutils.Films
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
-    val apiInterface = ApiInterface.create().getMovies(20)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        apiInterface.enqueue(object : Callback<List<Films>> {
-            override fun onResponse(call: Call<List<Films>>, response: Response<List<Films>>) {
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    setContent {
-                        DestinationsNavHost(navGraph = NavGraphs.root)
-                        //MovieList(movie = body!!)
-                    }
-                }
-            }
+        setContent {
+            DestinationsNavHost(navGraph = NavGraphs.root)
+        }
 
-            override fun onFailure(call: Call<List<Films>>, t: Throwable) {
-                Log.d("tag", t.message.toString())
-                Log.d("check2", t.toString())
-            }
-        })
     }
 }
 
-@Destination (start = true)
+
+fun getMovies(): List<Films> {
+    var movie = listOf<Films>()
+
+    val job = GlobalScope.launch(Dispatchers.IO) {
+        val response = ApiInterface.create().getMovies(6)
+        if (response.isSuccessful) {
+            movie = response.body()!!
+        }
+    }
+    runBlocking {
+        job.join()
+    }
+    return movie
+
+}
+
+
+@Destination(start = true)
 @Composable
-fun MovieList(movie: List<Films>, navigator: DestinationsNavigator) {
+fun MovieList(navigator: DestinationsNavigator) {
+
+    val movie = getMovies()
 
     LazyVerticalGrid(
         verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
-        modifier = Modifier.padding(top = 5.dp, start = 5.dp,end = 5.dp),
-        columns = GridCells.Fixed(2),
-        content = {
-            itemsIndexed(items = movie) { index, item ->
-                MovieItem(movie = item)
-            }
+        modifier = Modifier.padding(top = 5.dp, start = 5.dp, end = 5.dp),
+        columns = GridCells.Fixed(2)
+    ) {
+        itemsIndexed(items = movie) { index, item ->
+            MovieItem(movie = item)
         }
-    )
+    }
 
 }
 
 @Composable
 fun MovieItem(movie: Films) {
-    Column() {
+    Column {
         Image(
             painter = rememberAsyncImagePainter(model = movie.urls.full),
             contentDescription = "null",
@@ -91,7 +96,7 @@ fun MovieItem(movie: Films) {
             Modifier
                 .fillMaxWidth()
                 .padding(top = 2.dp),
-            border = BorderStroke(1.dp,Color.Gray)
+            border = BorderStroke(1.dp, Color.Gray)
         ) {
             Text(
                 text = "Скачать",
