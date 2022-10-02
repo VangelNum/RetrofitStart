@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'kotlin-android-extensions'
     id("com.google.devtools.ksp") version "1.7.10-1.0.6"
 }
 
@@ -82,7 +83,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     // coil
     implementation "io.coil-kt:coil-compose:2.1.0"
-
+    implementation "io.coil-kt:coil:2.2.2"
 
     //corotines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'

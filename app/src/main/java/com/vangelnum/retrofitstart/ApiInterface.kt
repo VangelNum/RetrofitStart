@@ -12,10 +12,11 @@ import retrofit2.http.Query
 const val API_KEY = "OmRnyUob2tx1TUq15fqx-LyuqKJAQ7QaPoMWCOOD-JM"
 
 interface ApiInterface {
-    @GET("photos/random/?client_id=$API_KEY")
-    suspend fun getMovies(@Query("count") count: Int): Response<MutableList<Films>>
-
+    @GET("photos/?client_id=$API_KEY")
+    suspend fun getMovies(@Query ("order_by") order_by : String): Response<List<Films>>
+    //@Query("count") count: Int, @Query("order_by") order_by: String
     companion object {
+
 
         var BASE_URL = "https://api.unsplash.com/"
 

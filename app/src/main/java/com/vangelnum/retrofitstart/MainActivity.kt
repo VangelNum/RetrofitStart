@@ -1,31 +1,36 @@
 package com.vangelnum.retrofitstart
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.*
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.vangelnum.retrofitstart.destinations.OpenDestination
 import com.vangelnum.retrofitstart.filmsutils.Films
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -37,25 +42,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             DestinationsNavHost(navGraph = NavGraphs.root)
         }
-
     }
 }
 
 
 fun getMovies(): List<Films> {
-    var movie = listOf<Films>()
-
-    val job = GlobalScope.launch(Dispatchers.IO) {
-        val response = ApiInterface.create().getMovies(6)
-        if (response.isSuccessful) {
-            movie = response.body()!!
+    var movie: List<Films> = listOf()
+    runBlocking {
+        launch {
+            val response = ApiInterface.create().getMovies("popular")
+            if (response.isSuccessful) {
+                movie = response.body()!!
+            }
         }
     }
-    runBlocking {
-        job.join()
-    }
     return movie
-
 }
 
 
@@ -63,48 +64,87 @@ fun getMovies(): List<Films> {
 @Composable
 fun MovieList(navigator: DestinationsNavigator) {
 
-    val movie = getMovies()
-
+    val movie: List<Films> = getMovies()
+    Log.d("check", movie.toString())
     LazyVerticalGrid(
         verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
-        modifier = Modifier.padding(top = 5.dp, start = 5.dp, end = 5.dp),
+        modifier = Modifier.padding(all = 5.dp),
         columns = GridCells.Fixed(2)
     ) {
-        itemsIndexed(items = movie) { index, item ->
-            MovieItem(movie = item)
-        }
-    }
+        itemsIndexed(items = movie) { index, movie ->
 
-}
+            Card(modifier = Modifier
+                .height(400.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(25.dp))) {
+                SubcomposeAsyncImage(
+                    model = movie.urls.full,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            val currentUrl = movie.urls.full
+                            navigator.navigate(OpenDestination(currentUrl))
+                        }
+                ) {
+                    val state = painter.state
+                    if (state is AsyncImagePainter.State.Loading || state is AsyncImagePainter.State.Error) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                color = Color.Green
+                            )
+                        }
+                    } else {
+                        SubcomposeAsyncImageContent()
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(topStart = 15.dp, bottomStart = 15.dp),
+                        backgroundColor = Color.Black
+                    ) {
+                        Row(modifier = Modifier.padding(10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_baseline_remove_red_eye_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = movie.likes.toString(),
+                                color = Color.White,
+                                fontSize = 12.sp
+                                //textAlign = TextAlign.Center
+                            )
+                        }
+                    }
 
-@Composable
-fun MovieItem(movie: Films) {
-    Column {
-        Image(
-            painter = rememberAsyncImagePainter(model = movie.urls.full),
-            contentDescription = "null",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .aspectRatio(1f)
-                .clickable {
 
                 }
-        )
-        OutlinedButton(
-            onClick = { /*TODO*/ },
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            border = BorderStroke(1.dp, Color.Gray)
-        ) {
-            Text(
-                text = "Скачать",
-                textAlign = TextAlign.Center,
-                color = Color.Black,
-                fontSize = 14.sp,
-            )
-        }
-    }
+            }
 
+//            Row(modifier = Modifier
+//                .height(10.dp)
+//                .width(100.dp)
+//                .background(Color.Red)) {
+//
+//            }
+                //Text(text = "check", textAlign = TextAlign.End, modifier = Modifier.background(Color.Red))
+//            Row(modifier = Modifier.fillMaxSize()) {
+//                Text(text = "check", textAlign = TextAlign.End)
+//            }
+
+        }
+        
+    }
 }
