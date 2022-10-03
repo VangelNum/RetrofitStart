@@ -4,17 +4,16 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,10 +21,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.*
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -72,7 +72,7 @@ fun MovieList(navigator: DestinationsNavigator) {
         modifier = Modifier.padding(all = 5.dp),
         columns = GridCells.Fixed(2)
     ) {
-        itemsIndexed(items = movie) { index, movie ->
+        itemsIndexed(items = movie) { _, movie ->
 
             Card(modifier = Modifier
                 .height(400.dp)
@@ -91,7 +91,8 @@ fun MovieList(navigator: DestinationsNavigator) {
                 ) {
                     val state = painter.state
                     if (state is AsyncImagePainter.State.Loading || state is AsyncImagePainter.State.Error) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
                                 color = Color.Green
                             )
@@ -124,8 +125,8 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 text = movie.likes.toString(),
                                 color = Color.White,
                                 fontSize = 12.sp
-                                //textAlign = TextAlign.Center
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
                     }
 
@@ -139,12 +140,12 @@ fun MovieList(navigator: DestinationsNavigator) {
 //                .background(Color.Red)) {
 //
 //            }
-                //Text(text = "check", textAlign = TextAlign.End, modifier = Modifier.background(Color.Red))
+            //Text(text = "check", textAlign = TextAlign.End, modifier = Modifier.background(Color.Red))
 //            Row(modifier = Modifier.fillMaxSize()) {
 //                Text(text = "check", textAlign = TextAlign.End)
 //            }
 
         }
-        
+
     }
 }
