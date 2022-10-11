@@ -25,12 +25,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+
 
 
 @Destination
@@ -104,6 +107,7 @@ fun Open(navigator: DestinationsNavigator, url: String) {
                             }
                     ) {
                         val context = LocalContext.current
+                        val coroutine = rememberCoroutineScope()
                         Icon(
                             painter = painterResource(id = R.drawable.ic_baseline_favorite_24_white),
                             contentDescription = "share",
@@ -111,19 +115,18 @@ fun Open(navigator: DestinationsNavigator, url: String) {
                             modifier = Modifier
                                 .padding(10.dp)
                                 .clickable {
-                                   GlobalScope.launch {
+                                    val job = coroutine.launch(Dispatchers.IO) {
 
-                                        var url2 = URL(url)
-                                        var connection: HttpURLConnection? = null
-                                        connection = url2.openConnection() as HttpURLConnection?
+                                        val url2 = URL(url)
+                                        val connection: HttpURLConnection? =
+                                            url2.openConnection() as HttpURLConnection?
                                         connection!!.connect()
 
-                                        var inputStream: InputStream? = null
-                                        inputStream = connection.inputStream
+                                        val inputStream: InputStream? = connection.inputStream
                                         val myBitmap = BitmapFactory.decodeStream(inputStream)
                                         val share = Intent(Intent.ACTION_SEND)
                                         share.type = "image/*"
-                                        share.type = "text/html"
+                                        share.type = "text/*"
                                         share.putExtra(Intent.EXTRA_TEXT, "Text message here")
                                         val bytes = ByteArrayOutputStream()
                                         myBitmap.compress(Bitmap.CompressFormat.JPEG,
@@ -139,7 +142,12 @@ fun Open(navigator: DestinationsNavigator, url: String) {
                                         share.putExtra(Intent.EXTRA_STREAM, imageUri)
                                         context.startActivity(Intent.createChooser(share,
                                             "Select"))
+
                                     }
+                                    runBlocking {
+                                        job.join()
+                                    }
+
 
                                 }
                         )
