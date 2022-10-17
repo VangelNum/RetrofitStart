@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.util.Log
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -13,8 +12,8 @@ import kotlinx.coroutines.launch
 
 
 class NetworkConnectivityObserver(
-    private val context: Context
-): ConnectivityObserver {
+    private val context: Context,
+) : ConnectivityObserver {
 
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -26,7 +25,6 @@ class NetworkConnectivityObserver(
                     super.onAvailable(network)
                     launch {
                         send(ConnectivityObserver.Status.Available)
-                        Log.d("able1","Available")
                     }
                 }
 
@@ -34,7 +32,7 @@ class NetworkConnectivityObserver(
                     super.onLosing(network, maxMsToLive)
                     launch {
                         send(ConnectivityObserver.Status.Losing)
-                        Log.d("able1","Losing")
+                        Log.d("able1", "Losing")
                     }
                 }
 
@@ -42,7 +40,7 @@ class NetworkConnectivityObserver(
                     super.onLost(network)
                     launch {
                         send(ConnectivityObserver.Status.Lost)
-                        Log.d("able1","Lost")
+                        Log.d("able1", "Lost")
                     }
                 }
 
@@ -50,7 +48,7 @@ class NetworkConnectivityObserver(
                     super.onUnavailable()
                     launch {
                         send(ConnectivityObserver.Status.Unavailable)
-                        Log.d("able1","Unavailable")
+                        Log.d("able1", "Unavailable")
                     }
                 }
             }
