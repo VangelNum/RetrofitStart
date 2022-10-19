@@ -18,8 +18,6 @@ interface ApiInterface {
 
     //@Query("count") count: Int, @Query("order_by") order_by: String
     companion object {
-
-
         private var BASE_URL = "https://api.unsplash.com/"
 
         fun create(): ApiInterface {

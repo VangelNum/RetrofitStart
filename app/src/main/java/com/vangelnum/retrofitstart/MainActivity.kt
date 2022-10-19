@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
 }
 
 
+@OptIn(DelicateCoroutinesApi::class)
 fun getMovies(context: Context, status: ConnectivityObserver.Status): List<Films> {
     var movie: List<Films> = listOf()
     if (status.toString() == "Available") {
@@ -59,6 +60,8 @@ fun getMovies(context: Context, status: ConnectivityObserver.Status): List<Films
             val response = ApiInterface.create().getMovies("popular")
             if (response.isSuccessful) {
                 movie = response.body()!!
+            } else {
+                //error
             }
         }
         runBlocking {
@@ -108,12 +111,12 @@ fun MovieList(navigator: DestinationsNavigator) {
         }
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             OutlinedButton(
-                border = BorderStroke(1.dp,Color.Black),
+                border = BorderStroke(1.dp, Color.Black),
                 shape = RoundedCornerShape(15.dp),
                 modifier = Modifier.padding(bottom = 20.dp),
                 onClick = {
-                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-            }
+                    context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+                }
             ) {
                 Text(text = "Открыть настройки подключения", color = Color.Black)
             }
@@ -139,7 +142,8 @@ fun MovieList(navigator: DestinationsNavigator) {
                             .fillMaxSize()
                             .clickable {
                                 val currentUrl = movie.urls.full
-                                navigator.navigate(OpenDestination(currentUrl))
+                                val currentcolor = movie.color
+                                navigator.navigate(OpenDestination(currentUrl, currentcolor))
                             }
                     ) {
                         val state = painter.state
