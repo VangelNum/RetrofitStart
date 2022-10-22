@@ -14,7 +14,11 @@ const val API_KEY = "OmRnyUob2tx1TUq15fqx-LyuqKJAQ7QaPoMWCOOD-JM"
 
 interface ApiInterface {
     @GET("photos/?client_id=$API_KEY")
-    suspend fun getMovies(@Query("order_by") order_by: String): Response<List<Films>>
+    suspend fun getMovies(
+        @Query("order_by") order_by: String,
+        @Query("per_page") per_page: Int,
+        @Query("page") page: Int,
+    ): Response<List<Films>>
 
     //@Query("count") count: Int, @Query("order_by") order_by: String
     companion object {

@@ -1,5 +1,6 @@
 package com.vangelnum.retrofitstart
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -8,12 +9,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -24,12 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.rememberAsyncImagePainter
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -53,11 +55,16 @@ class MainActivity : ComponentActivity() {
 
 
 @OptIn(DelicateCoroutinesApi::class)
-fun getMovies(context: Context, status: ConnectivityObserver.Status): List<Films> {
+private fun getMovies(
+    per_page: Int,
+    page: Int,
+    context: Context,
+    status: ConnectivityObserver.Status,
+): List<Films> {
     var movie: List<Films> = listOf()
     if (status.toString() == "Available") {
         val job = GlobalScope.launch(Dispatchers.IO) {
-            val response = ApiInterface.create().getMovies("popular")
+            val response = ApiInterface.create().getMovies("popular", per_page, page)
             if (response.isSuccessful) {
                 movie = response.body()!!
             } else {
@@ -73,9 +80,26 @@ fun getMovies(context: Context, status: ConnectivityObserver.Status): List<Films
     return movie
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Destination(start = true)
 @Composable
 fun MovieList(navigator: DestinationsNavigator) {
+
+    var per_page by remember {
+        mutableStateOf(30)
+    }
+    var page by remember {
+        mutableStateOf(1)
+    }
+
+    var visible by remember {
+        mutableStateOf(false)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val listState = rememberLazyGridState()
+
     val context = LocalContext.current
 
     val status by connectivityObserver.observe().collectAsState(
@@ -85,8 +109,7 @@ fun MovieList(navigator: DestinationsNavigator) {
     var color by remember {
         mutableStateOf(Color.Green)
     }
-
-    val movie: List<Films> = getMovies(context, status)
+    val movie: List<Films> = getMovies(per_page, page, context, status)
 
     if (movie.isEmpty()) {
         Box(modifier = Modifier
@@ -122,78 +145,221 @@ fun MovieList(navigator: DestinationsNavigator) {
             }
         }
     } else {
-        LazyVerticalGrid(
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier.padding(all = 5.dp),
-            columns = GridCells.Fixed(2)
-        ) {
-            itemsIndexed(items = movie) { _, movie ->
-
-                Card(modifier = Modifier
-                    .height(400.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(25.dp))) {
-                    SubcomposeAsyncImage(
-                        model = movie.urls.full,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable {
-                                val currentUrl = movie.urls.full
-                                val currentcolor = movie.color
-                                navigator.navigate(OpenDestination(currentUrl, currentcolor))
-                            }
-                    ) {
-                        val state = painter.state
-                        if (state is AsyncImagePainter.State.Loading || state is AsyncImagePainter.State.Error) {
-                            Box(modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(
-                                    color = Color.Green
-                                )
-                            }
-                        } else {
-                            SubcomposeAsyncImageContent()
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    actions = {
+                        IconButton(onClick = {}) {
+                            Icon(painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                contentDescription = "search")
                         }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.BottomEnd
+                    },
+                    title = {
+
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {}) {
+                            Icon(painter = painterResource(id = R.drawable.ic_baseline_menu_24),
+                                contentDescription = "menu")
+                        }
+                    },
+                    backgroundColor = Color.White,
+                    contentColor = Color.Black,
+                    elevation = 3.dp
+                )
+            }
+        ) {
+            it.calculateTopPadding()
+            Column() {
+                Text(
+                    fontFamily = FontFamily(Font(R.font.ubuntulight)),
+                    text = "Популярные",
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(start = 10.dp,top = 15.dp)
+                )
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+                    .height(50.dp)
+                    .background(Color(0xAD87A8FD), shape = RoundedCornerShape(15.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Card(
-                            shape = RoundedCornerShape(topStart = 15.dp, bottomStart = 15.dp),
-                            backgroundColor = Color.Black
+                            modifier = Modifier
+                                .height(40.dp)
+                                .width(70.dp)
+                                .clip(RoundedCornerShape(25.dp)),
+                            backgroundColor = Color(0xFF6F8BF0)
                         ) {
-                            Row(modifier = Modifier.padding(10.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.Bottom
-                            ) {
+                            IconButton(onClick = {}) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_baseline_remove_red_eye_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(15.dp),
+                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    contentDescription = "null",
                                     tint = Color.White
                                 )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = movie.likes.toString(),
-                                    color = Color.White,
-                                    fontSize = 12.sp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
                             }
-                        }
 
+                        }
+                        Card(
+                            modifier = Modifier
+                                .height(40.dp)
+                                .width(70.dp)
+                                .clip(RoundedCornerShape(25.dp)),
+                            backgroundColor = Color(0xFF6F8BF0)
+                        ) {
+                            IconButton(onClick = {}) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    contentDescription = "null",
+                                    tint = Color.White
+                                )
+                            }
+
+                        }
+                        Card(
+                            modifier = Modifier
+                                .height(40.dp)
+                                .width(70.dp)
+                                .clip(RoundedCornerShape(25.dp)),
+                            backgroundColor = Color(0xFF6F8BF0)
+                        ) {
+                            IconButton(onClick = {}) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    contentDescription = "null",
+                                    tint = Color.White
+                                )
+                            }
+
+                        }
 
                     }
                 }
 
+                LazyVerticalGrid(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    modifier = Modifier.padding(start = 7.dp, top = 7.dp, end = 7.dp),
+                    contentPadding = PaddingValues(bottom = 10.dp),
+                    columns = GridCells.Fixed(3)
+                ) {
+                    itemsIndexed(items = movie) { index, movie ->
+                        if (index == 29) {
+                            visible = true
+                        }
+                        Card(modifier = Modifier
+                            .height(400.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(25.dp))) {
+                            val painter = rememberAsyncImagePainter(model = movie.urls.full)
+                            val painterstate = painter.state
+                            Image(
+                                painter = painter,
+                                contentDescription = "null",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable {
+                                        val currentUrl = movie.urls.full
+                                        val currentcolor = movie.color
+                                        navigator.navigate(OpenDestination(currentUrl,
+                                            currentcolor))
+                                    }
+                            )
+                            if (painterstate is AsyncImagePainter.State.Loading) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(
+                                        color = Color.Green
+                                    )
+                                }
+
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.BottomEnd
+                            ) {
+                                Card(
+                                    shape = RoundedCornerShape(topStart = 15.dp,
+                                        bottomStart = 15.dp),
+                                    backgroundColor = Color.Black
+                                ) {
+                                    Row(modifier = Modifier.padding(10.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.Bottom
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_baseline_remove_red_eye_24),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(15.dp),
+                                            tint = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Text(
+                                            text = movie.likes.toString(),
+                                            color = Color.White,
+                                            fontSize = 12.sp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                }
+
+
+                            }
+                        }
+
+
+                    }
+
+                }
+
 
             }
+        }
+        if (visible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 10.dp, end = 10.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Card(modifier = Modifier.size(70.dp),
+                    shape = CircleShape,
+                    backgroundColor = Color.White,
+                    border = BorderStroke(1.dp, Color.Black)
+                ) {
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(index = 0)
+                            delay(300L)
+                            page++
+                        }
+                    }) {
+                        Icon(painter = painterResource(id = R.drawable.ic_round_refresh_24),
+                            contentDescription = "arrow",
+                            modifier = Modifier.size(40.dp),
+                            tint = Color.Black
+                        )
+                    }
 
+
+                }
+            }
         }
     }
+
 }
+
+fun LazyGridScope.header(
+    content: @Composable LazyGridItemScope.() -> Unit,
+) {
+    item(span = { GridItemSpan(this.maxLineSpan) }, content = content)
+}
+
+
