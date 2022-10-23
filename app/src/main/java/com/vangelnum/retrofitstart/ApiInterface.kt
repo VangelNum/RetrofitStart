@@ -1,9 +1,7 @@
 package com.vangelnum.retrofitstart
 
 import com.vangelnum.retrofitstart.filmsutils.Films
-import com.vangelnum.retrofitstart.searchfilms.Result
 import com.vangelnum.retrofitstart.searchfilms.SearchItem
-import com.vangelnum.retrofitstart.searchfilms.Urls
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit

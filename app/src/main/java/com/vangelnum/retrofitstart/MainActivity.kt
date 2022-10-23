@@ -122,9 +122,9 @@ private fun getMovies2(
 private fun getSearch(
     status: ConnectivityObserver.Status,
     query: String,
-    per_page: Int
+    per_page: Int,
 ): SearchItem {
-    var movie: SearchItem = SearchItem(listOf(),0,0)
+    var movie: SearchItem = SearchItem(listOf(), 0, 0)
     if (status.toString() == "Available") {
         val job = GlobalScope.launch(Dispatchers.IO) {
             val response = ApiInterface.create().getSearch(query, per_page)
@@ -142,9 +142,6 @@ private fun getSearch(
     }
     return movie
 }
-
-
-
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -202,10 +199,9 @@ fun MovieList(navigator: DestinationsNavigator) {
     var text by remember {
         mutableStateOf("Популярные")
     }
-
     var movie: List<Films> = getMovies(per_page, page, status, order)
-    var movie2: SearchItem = getSearch(status,"apple",10)
-    Log.d("movie",movie2.results.toString())
+    var movie2: SearchItem = getSearch(status, "apple", 10)
+    var list = movie2.results
     //var movie2: Result = getSearch(status,"green",10)
 
     if (movie.isEmpty()) {
@@ -266,10 +262,9 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 )
                             },
                             keyboardActions = KeyboardActions(
-                               onDone = {
-                                   Log.d("check",state.value.text)
-                                   //movie2 = getSearch(status, state.value.text,10 )
-                               }
+                                onDone = {
+                                    movie = list
+                                }
                             ),
                             leadingIcon = {
                                 Icon(
@@ -297,7 +292,6 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 }
                             },
                             singleLine = true,
-                            // The TextFiled has rounded corners top left and right by default
                             colors = TextFieldDefaults.textFieldColors(
                                 textColor = Color.Black,
                                 cursorColor = Color.Black,
