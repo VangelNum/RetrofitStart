@@ -1,10 +1,9 @@
 package com.vangelnum.retrofitstart
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,20 +12,32 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +48,9 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.vangelnum.retrofitstart.destinations.OpenDestination
 import com.vangelnum.retrofitstart.filmsutils.Films
+import com.vangelnum.retrofitstart.searchfilms.Result
+import com.vangelnum.retrofitstart.searchfilms.SearchItem
+import com.vangelnum.retrofitstart.searchfilms.Urls
 import kotlinx.coroutines.*
 
 private lateinit var connectivityObserver: ConnectivityObserver
@@ -58,13 +72,13 @@ class MainActivity : ComponentActivity() {
 private fun getMovies(
     per_page: Int,
     page: Int,
-    context: Context,
     status: ConnectivityObserver.Status,
+    order: String,
 ): List<Films> {
     var movie: List<Films> = listOf()
     if (status.toString() == "Available") {
         val job = GlobalScope.launch(Dispatchers.IO) {
-            val response = ApiInterface.create().getMovies("popular", per_page, page)
+            val response = ApiInterface.create().getMovies(order, per_page, page)
             if (response.isSuccessful) {
                 movie = response.body()!!
             } else {
@@ -80,7 +94,60 @@ private fun getMovies(
     return movie
 }
 
-@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(DelicateCoroutinesApi::class)
+private fun getMovies2(
+    status: ConnectivityObserver.Status,
+    count: Int,
+): List<Films> {
+    var movie: List<Films> = listOf()
+    if (status.toString() == "Available") {
+        val job = GlobalScope.launch(Dispatchers.IO) {
+            val response = ApiInterface.create().getMovies2(count)
+            if (response.isSuccessful) {
+                movie = response.body()!!
+            } else {
+                //error
+            }
+        }
+        runBlocking {
+            job.join()
+        }
+    } else {
+        //error
+    }
+    return movie
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+private fun getSearch(
+    status: ConnectivityObserver.Status,
+    query: String,
+    per_page: Int
+): SearchItem {
+    var movie: SearchItem = SearchItem(listOf(),0,0)
+    if (status.toString() == "Available") {
+        val job = GlobalScope.launch(Dispatchers.IO) {
+            val response = ApiInterface.create().getSearch(query, per_page)
+            if (response.isSuccessful) {
+                movie = response.body()!!
+            } else {
+                //error
+            }
+        }
+        runBlocking {
+            job.join()
+        }
+    } else {
+        //error
+    }
+    return movie
+}
+
+
+
+
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Destination(start = true)
 @Composable
 fun MovieList(navigator: DestinationsNavigator) {
@@ -92,8 +159,26 @@ fun MovieList(navigator: DestinationsNavigator) {
         mutableStateOf(1)
     }
 
-    var visible by remember {
-        mutableStateOf(false)
+    var whatscurrentpage by remember {
+        mutableStateOf(1)
+    }
+    var backgroundColor1 by remember {
+        mutableStateOf(Color.White)
+    }
+    var newcolor1 by remember {
+        mutableStateOf(Color(0xFF6F8BF0))
+    }
+    var backgroundColor2 by remember {
+        mutableStateOf(Color.White)
+    }
+    var newcolor2 by remember {
+        mutableStateOf(Color(0xFF6F8BF0))
+    }
+    var backgroundColor3 by remember {
+        mutableStateOf(Color.White)
+    }
+    var newcolor3 by remember {
+        mutableStateOf(Color(0xFF6F8BF0))
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -109,7 +194,19 @@ fun MovieList(navigator: DestinationsNavigator) {
     var color by remember {
         mutableStateOf(Color.Green)
     }
-    val movie: List<Films> = getMovies(per_page, page, context, status)
+
+    var order by remember {
+        mutableStateOf("popular")
+    }
+
+    var text by remember {
+        mutableStateOf("Популярные")
+    }
+
+    var movie: List<Films> = getMovies(per_page, page, status, order)
+    var movie2: SearchItem = getSearch(status,"apple",10)
+    Log.d("movie",movie2.results.toString())
+    //var movie2: Result = getSearch(status,"green",10)
 
     if (movie.isEmpty()) {
         Box(modifier = Modifier
@@ -149,10 +246,70 @@ fun MovieList(navigator: DestinationsNavigator) {
             topBar = {
                 TopAppBar(
                     actions = {
-                        IconButton(onClick = {}) {
-                            Icon(painter = painterResource(id = R.drawable.ic_baseline_search_24),
-                                contentDescription = "search")
-                        }
+                        val state = remember { mutableStateOf(TextFieldValue("")) }
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        TextField(
+                            value = state.value,
+                            onValueChange = { value ->
+                                state.value = value
+                            },
+                            shape = RoundedCornerShape(25.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 10.dp)
+                                .scale(scaleX = 1F, scaleY = 0.9F),
+                            textStyle = TextStyle(color = Color.Black),
+                            placeholder = {
+                                Text(
+                                    text = "Search",
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            keyboardActions = KeyboardActions(
+                               onDone = {
+                                   Log.d("check",state.value.text)
+                                   //movie2 = getSearch(status, state.value.text,10 )
+                               }
+                            ),
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                if (state.value != TextFieldValue("")) {
+                                    IconButton(
+                                        onClick = {
+                                            state.value =
+                                                TextFieldValue("") // Remove text from TextField when you press the 'X' icon
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                        )
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            // The TextFiled has rounded corners top left and right by default
+                            colors = TextFieldDefaults.textFieldColors(
+                                textColor = Color.Black,
+                                cursorColor = Color.Black,
+                                leadingIconColor = Color.Black,
+                                trailingIconColor = Color.Black,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Black
+                            )
+                        )
+
+
                     },
                     title = {
 
@@ -170,12 +327,12 @@ fun MovieList(navigator: DestinationsNavigator) {
             }
         ) {
             it.calculateTopPadding()
-            Column() {
+            Column {
                 Text(
                     fontFamily = FontFamily(Font(R.font.ubuntulight)),
-                    text = "Популярные",
+                    text = text,
                     fontSize = 24.sp,
-                    modifier = Modifier.padding(start = 10.dp,top = 15.dp)
+                    modifier = Modifier.padding(start = 10.dp, top = 15.dp)
                 )
                 Box(modifier = Modifier
                     .fillMaxWidth()
@@ -194,13 +351,23 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 .height(40.dp)
                                 .width(70.dp)
                                 .clip(RoundedCornerShape(25.dp)),
-                            backgroundColor = Color(0xFF6F8BF0)
+                            backgroundColor = newcolor1
                         ) {
-                            IconButton(onClick = {}) {
+                            IconButton(onClick = {
+                                movie = getMovies(per_page, page, status, "popular")
+                                whatscurrentpage = 1
+                                text = "Популярные"
+                                newcolor1 = Color(0xFF6F8BF0)
+                                backgroundColor1 = Color.White
+                                newcolor2 = Color(0xFF6F8BF0)
+                                backgroundColor2 = Color.White
+                                newcolor3 = Color(0xFF6F8BF0)
+                                backgroundColor3 = Color.White
+                            }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    painter = painterResource(id = R.drawable.ic_baseline_local_fire_department_24),
                                     contentDescription = "null",
-                                    tint = Color.White
+                                    tint = backgroundColor1
                                 )
                             }
 
@@ -210,13 +377,23 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 .height(40.dp)
                                 .width(70.dp)
                                 .clip(RoundedCornerShape(25.dp)),
-                            backgroundColor = Color(0xFF6F8BF0)
+                            backgroundColor = backgroundColor2
                         ) {
-                            IconButton(onClick = {}) {
+                            IconButton(onClick = {
+                                movie = getMovies(per_page, page, status, "latest")
+                                whatscurrentpage = 2
+                                text = "Последние"
+                                newcolor1 = Color.White
+                                backgroundColor1 = Color(0xFF6F8BF0)
+                                newcolor2 = Color.White
+                                backgroundColor2 = Color(0xFF6F8BF0)
+                                newcolor3 = Color(0xFF6F8BF0)
+                                backgroundColor3 = Color.White
+                            }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    painter = painterResource(id = R.drawable.ic_baseline_access_time_24),
                                     contentDescription = "null",
-                                    tint = Color.White
+                                    tint = newcolor2
                                 )
                             }
 
@@ -226,13 +403,23 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 .height(40.dp)
                                 .width(70.dp)
                                 .clip(RoundedCornerShape(25.dp)),
-                            backgroundColor = Color(0xFF6F8BF0)
+                            backgroundColor = backgroundColor3
                         ) {
-                            IconButton(onClick = {}) {
+                            IconButton(onClick = {
+                                whatscurrentpage = 3
+                                text = "Случайные"
+                                movie = getMovies2(status, 30)
+                                newcolor1 = Color.White
+                                backgroundColor1 = Color(0xFF6F8BF0)
+                                newcolor2 = Color(0xFF6F8BF0)
+                                backgroundColor2 = Color.White
+                                newcolor3 = Color.White
+                                backgroundColor3 = Color(0xFF6F8BF0)
+                            }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    painter = painterResource(id = R.drawable.ic_baseline_favorite_24_white),
                                     contentDescription = "null",
-                                    tint = Color.White
+                                    tint = newcolor3
                                 )
                             }
 
@@ -250,9 +437,6 @@ fun MovieList(navigator: DestinationsNavigator) {
                     columns = GridCells.Fixed(3)
                 ) {
                     itemsIndexed(items = movie) { index, movie ->
-                        if (index == 29) {
-                            visible = true
-                        }
                         Card(modifier = Modifier
                             .height(400.dp)
                             .fillMaxWidth()
@@ -322,44 +506,39 @@ fun MovieList(navigator: DestinationsNavigator) {
 
             }
         }
-        if (visible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 10.dp, end = 10.dp),
-                contentAlignment = Alignment.BottomEnd
+    }
+    if (status.toString() == "Available") {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 15.dp, end = 15.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            Card(modifier = Modifier.size(50.dp),
+                shape = CircleShape,
+                backgroundColor = Color.White,
+                border = BorderStroke(1.dp, Color.Black)
             ) {
-                Card(modifier = Modifier.size(70.dp),
-                    shape = CircleShape,
-                    backgroundColor = Color.White,
-                    border = BorderStroke(1.dp, Color.Black)
-                ) {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            listState.animateScrollToItem(index = 0)
-                            delay(300L)
-                            page++
-                        }
-                    }) {
-                        Icon(painter = painterResource(id = R.drawable.ic_round_refresh_24),
-                            contentDescription = "arrow",
-                            modifier = Modifier.size(40.dp),
-                            tint = Color.Black
-                        )
+                IconButton(onClick = {
+                    coroutineScope.launch {
+                        listState.animateScrollToItem(index = 0)
+                        delay(300L)
+                        page++
                     }
-
-
+                }) {
+                    Icon(painter = painterResource(id = R.drawable.ic_round_refresh_24),
+                        contentDescription = "arrow",
+                        modifier = Modifier.size(30.dp),
+                        tint = Color.Black
+                    )
                 }
+
+
             }
         }
+
     }
 
-}
-
-fun LazyGridScope.header(
-    content: @Composable LazyGridItemScope.() -> Unit,
-) {
-    item(span = { GridItemSpan(this.maxLineSpan) }, content = content)
 }
 
 
