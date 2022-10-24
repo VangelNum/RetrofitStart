@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,6 +30,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -48,9 +51,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.vangelnum.retrofitstart.destinations.OpenDestination
 import com.vangelnum.retrofitstart.filmsutils.Films
-import com.vangelnum.retrofitstart.searchfilms.Result
 import com.vangelnum.retrofitstart.searchfilms.SearchItem
-import com.vangelnum.retrofitstart.searchfilms.Urls
 import kotlinx.coroutines.*
 
 private lateinit var connectivityObserver: ConnectivityObserver
@@ -199,9 +200,10 @@ fun MovieList(navigator: DestinationsNavigator) {
     var text by remember {
         mutableStateOf("Популярные")
     }
+
     var movie: List<Films> = getMovies(per_page, page, status, order)
-    var movie2: SearchItem = getSearch(status, "apple", 10)
-    var list = movie2.results
+    //var movie2: SearchItem = getSearch(status, "apple", 10)
+    // var list = movie2.results
     //var movie2: Result = getSearch(status,"green",10)
 
     if (movie.isEmpty()) {
@@ -242,44 +244,81 @@ fun MovieList(navigator: DestinationsNavigator) {
             topBar = {
                 TopAppBar(
                     actions = {
-                        val state = remember { mutableStateOf(TextFieldValue("")) }
+
                         val keyboardController = LocalSoftwareKeyboardController.current
-                        TextField(
-                            value = state.value,
-                            onValueChange = { value ->
-                                state.value = value
-                            },
-                            shape = RoundedCornerShape(25.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(end = 10.dp)
-                                .scale(scaleX = 1F, scaleY = 0.9F),
-                            textStyle = TextStyle(color = Color.Black),
-                            placeholder = {
-                                Text(
-                                    text = "Search",
-                                    fontSize = 14.sp,
-                                )
-                            },
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    movie = list
+                        val focusRequester = remember { FocusRequester() }
+                        var visibleSearchBar by remember {
+                            mutableStateOf(false)
+                        }
+                        var visiblecurrentSearch by remember {
+                            mutableStateOf(true)
+                        }
+                        val state = remember { mutableStateOf(TextFieldValue("")) }
+
+                        AnimatedVisibility(visible = visiblecurrentSearch) {
+                            IconButton(onClick = {
+                                visiblecurrentSearch = false
+                                visibleSearchBar = true
+                                coroutineScope.launch {
+                                    delay(1000L)
+                                    focusRequester.requestFocus()
+                                    keyboardController?.show()
                                 }
-                            ),
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = "",
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                )
-                            },
-                            trailingIcon = {
-                                if (state.value != TextFieldValue("")) {
+                            }) {
+                                Icon(painter = painterResource(id = R.drawable.ic_baseline_search_24),
+                                    contentDescription = "search")
+                            }
+
+                        }
+                        AnimatedVisibility(
+                            visible = visibleSearchBar,
+
+                        ) {
+                            TextField(
+                                modifier = Modifier
+                                    .focusRequester(focusRequester)
+                                    .fillMaxWidth()
+                                    .padding(end = 10.dp)
+                                    .scale(scaleX = 1F, scaleY = 0.9F),
+                                value = state.value,
+                                onValueChange = { value ->
+                                    state.value = value
+                                },
+                                enabled = true,
+                                shape = RoundedCornerShape(25.dp),
+
+                                textStyle = TextStyle(color = Color.Black),
+                                placeholder = {
+                                    Text(
+                                        text = "Search",
+                                        fontSize = 14.sp,
+                                    )
+                                },
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        //movie = list
+                                    }
+                                ),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = "",
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                    )
+                                },
+                                trailingIcon = {
                                     IconButton(
                                         onClick = {
                                             state.value =
                                                 TextFieldValue("") // Remove text from TextField when you press the 'X' icon
+                                            visibleSearchBar = false
+                                            visiblecurrentSearch = true
+                                            coroutineScope.launch {
+                                                delay(1000L)
+                                                focusRequester.requestFocus()
+                                                keyboardController?.hide()
+                                            }
                                         }
                                     ) {
                                         Icon(
@@ -289,19 +328,20 @@ fun MovieList(navigator: DestinationsNavigator) {
                                                 .size(20.dp)
                                         )
                                     }
-                                }
-                            },
-                            singleLine = true,
-                            colors = TextFieldDefaults.textFieldColors(
-                                textColor = Color.Black,
-                                cursorColor = Color.Black,
-                                leadingIconColor = Color.Black,
-                                trailingIconColor = Color.Black,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Black
+
+                                },
+                                singleLine = true,
+                                colors = TextFieldDefaults.textFieldColors(
+                                    textColor = Color.Black,
+                                    cursorColor = Color.Black,
+                                    leadingIconColor = Color.Black,
+                                    trailingIconColor = Color.Black,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Black
+                                )
                             )
-                        )
+                        }
 
 
                     },
