@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
@@ -451,6 +450,7 @@ fun MovieList(navigator: DestinationsNavigator) {
                                     .clip(RoundedCornerShape(25.dp)),
                                 backgroundColor = backgroundColor3
                             ) {
+
                                 IconButton(onClick = {
                                     text = "Случайные"
                                     movie = getMovies2(status, 30)
@@ -462,7 +462,8 @@ fun MovieList(navigator: DestinationsNavigator) {
                                     backgroundColor3 = Color(0xFF6F8BF0)
                                 }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_baseline_favorite_24_white),
+                                        modifier = Modifier.padding(5.dp),
+                                        painter = painterResource(id = R.drawable.random),
                                         contentDescription = "null",
                                         tint = newcolor3
                                     )
@@ -472,81 +473,98 @@ fun MovieList(navigator: DestinationsNavigator) {
 
                         }
                     }
-                    LazyVerticalGrid(
-                        state = listState,
-                        verticalArrangement = Arrangement.spacedBy(7.dp),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        modifier = Modifier.padding(start = 7.dp, top = 7.dp, end = 7.dp),
-                        contentPadding = PaddingValues(bottom = 10.dp),
-                        columns = GridCells.Fixed(3)
-                    ) {
-                        itemsIndexed(items = movie) { index, movie ->
-                            Card(modifier = Modifier
-                                .height(400.dp)
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(25.dp))) {
-                                val painter = rememberAsyncImagePainter(model = movie.urls.full)
-                                val painterstate = painter.state
-                                Image(
-                                    painter = painter,
-                                    contentDescription = "null",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clickable {
-                                            val currentUrl = movie.urls.full
-                                            val currentcolor = movie.color
-                                            navigator.navigate(OpenDestination(currentUrl,
-                                                currentcolor))
-                                        }
-                                )
-                                if (painterstate is AsyncImagePainter.State.Loading) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(
-                                            color = Color.Green
-                                        )
-                                    }
+                    Column {
 
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize(),
-                                    contentAlignment = Alignment.BottomEnd
-                                ) {
-                                    Card(
-                                        shape = RoundedCornerShape(topStart = 15.dp,
-                                            bottomStart = 15.dp),
-                                        backgroundColor = Color.Black
+
+                        LazyVerticalGrid(
+                            state = listState,
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .padding(start = 7.dp, top = 7.dp, end = 7.dp),
+                            contentPadding = PaddingValues(bottom = 100.dp),
+                            columns = GridCells.Fixed(3)
+                        ) {
+                            itemsIndexed(items = movie) { index, movie ->
+                                Card(modifier = Modifier
+                                    .height(400.dp)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(25.dp))) {
+                                    val painter = rememberAsyncImagePainter(model = movie.urls.full)
+                                    val painterstate = painter.state
+                                    Image(
+                                        painter = painter,
+                                        contentDescription = "null",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clickable {
+                                                val currentUrl = movie.urls.full
+                                                val currentcolor = movie.color
+                                                navigator.navigate(OpenDestination(currentUrl,
+                                                    currentcolor))
+                                            }
+                                    )
+                                    if (painterstate is AsyncImagePainter.State.Loading) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            CircularProgressIndicator(
+                                                color = Color.Green
+                                            )
+                                        }
+
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize(),
+                                        contentAlignment = Alignment.BottomEnd
                                     ) {
-                                        Row(modifier = Modifier.padding(10.dp),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.Bottom
+                                        Card(
+                                            shape = RoundedCornerShape(topStart = 15.dp,
+                                                bottomStart = 15.dp),
+                                            backgroundColor = Color.Black
                                         ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.ic_baseline_remove_red_eye_24),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(15.dp),
-                                                tint = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.width(5.dp))
-                                            Text(
-                                                text = movie.likes.toString(),
-                                                color = Color.White,
-                                                fontSize = 12.sp
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Row(modifier = Modifier.padding(10.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.Bottom
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.ic_baseline_remove_red_eye_24),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(15.dp),
+                                                    tint = Color.White
+                                                )
+                                                Spacer(modifier = Modifier.width(5.dp))
+                                                Text(
+                                                    text = movie.likes.toString(),
+                                                    color = Color.White,
+                                                    fontSize = 12.sp
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                            }
                                         }
+
+
                                     }
-
-
                                 }
+
                             }
 
-
                         }
-
+//                        val itemsList = (0..10).toList()
+//                        LazyRow {
+//                            items(itemsList) {
+//                                Card(modifier = Modifier
+//                                    .size(50.dp)
+//                                    .background(Color.White),
+//
+//                                ) {
+//
+//                                }
+//                                Text("Item is $it")
+//                            }
+//                        }
                     }
-
 
                 }
             } else {
@@ -555,7 +573,7 @@ fun MovieList(navigator: DestinationsNavigator) {
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     modifier = Modifier.padding(start = 7.dp, top = 7.dp, end = 7.dp),
-                    contentPadding = PaddingValues(bottom = 10.dp),
+                    contentPadding = PaddingValues(bottom = 100.dp),
                     columns = GridCells.Fixed(3)
                 ) {
                     itemsIndexed(items = movie2.results) { index, list ->
@@ -572,10 +590,10 @@ fun MovieList(navigator: DestinationsNavigator) {
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clickable {
-                                        //val currentUrl = movie.urls.full
-                                        //val currentcolor = movie.color
-                                        // navigator.navigate(OpenDestination(currentUrl,
-                                        //currentcolor))
+                                        val currentUrl = list.urls.full
+                                        val currentcolor = list.color
+                                         navigator.navigate(OpenDestination(currentUrl,
+                                        currentcolor))
                                     }
                             )
                             if (painterstate is AsyncImagePainter.State.Loading) {
@@ -625,37 +643,8 @@ fun MovieList(navigator: DestinationsNavigator) {
                 }
             }
         }
-        if (status.toString() == "Available") {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 15.dp, end = 15.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Card(modifier = Modifier.size(50.dp),
-                    shape = CircleShape,
-                    backgroundColor = Color.White,
-                    border = BorderStroke(1.dp, Color.Black)
-                ) {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            listState.animateScrollToItem(index = 0)
-                            delay(300L)
-                            page++
-                        }
-                    }) {
-                        Icon(painter = painterResource(id = R.drawable.ic_round_refresh_24),
-                            contentDescription = "arrow",
-                            modifier = Modifier.size(30.dp),
-                            tint = Color.Black
-                        )
-                    }
 
 
-                }
-            }
-
-        }
     }
 
 }

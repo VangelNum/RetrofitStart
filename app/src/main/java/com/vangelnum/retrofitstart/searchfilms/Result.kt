@@ -2,7 +2,7 @@ package com.vangelnum.retrofitstart.searchfilms
 
 data class Result(
 //    val blur_hash: String,
-//    val color: String,
+   val color: String,
 //    val created_at: String,
 //    val current_user_collections: List<Any>,
 //    val description: String,
